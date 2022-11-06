@@ -1,6 +1,6 @@
 # imgur.com image uploader
 ## Introduction
-This script uploads images from the file system. The names of the file images are passed as arguments to the script like this:
+This script uploads images from the file system to your account at https://imgur.com. The names of the file images are passed as arguments to the script like this:
 
 `python3 uploader.py *.jpg`
 or
