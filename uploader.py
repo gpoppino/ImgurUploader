@@ -102,6 +102,10 @@ class ImgurUploader:
 
             self.__finishUpload()
 
+            if response.status_code != 200:
+                print("Error: " + response.json()['data']['error'])
+                return None
+
             return response.json()['data']
 
 if __name__ == '__main__':
@@ -119,4 +123,5 @@ if __name__ == '__main__':
         imgurUploader = ImgurUploader()
         for image in sys.argv[1:]:
             data = imgurUploader.uploadImage(imgurAuthorizer, image)
-            print("Done %s => %s" % (image, data['link']))
+            if data is not None:
+                print("Done %s => %s" % (image, data['link']))
