@@ -9,20 +9,21 @@ from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 AUTHORIZATION_URL = "https://api.imgur.com/oauth2/authorize"
 TOKEN_URL = "https://api.imgur.com/oauth2/token"
 RESPONSE_TYPE = "token"
+SECRETS_FILE = ".client_secrets"
 
 
 class ImgurAuthorizer:
 
     def __init__(self):
         self.__config = configparser.ConfigParser()
-        self.__config.read('.client_secrets')
+        self.__config.read(SECRETS_FILE)
 
     def authorize_client(self):
         url = AUTHORIZATION_URL + "?client_id=%s&response_type=%s" % (
             self.__config['credentials']['client_id'], RESPONSE_TYPE)
         webbrowser.open(url)
 
-    def get_new_refresh_token(self):
+    def get_new_access_token(self):
         url = TOKEN_URL
         payload = {
             'refresh_token': self.__config['credentials']['refresh_token'],
@@ -37,18 +38,19 @@ class ImgurAuthorizer:
             print("Error getting new access token.")
             return None
         else:
-            self.__config['credentials']['access_token'] = response.json()['access_token']
-            self.__config.write()
+            self.update_tokens(response.json()['access_token'])
 
         return response.json()['access_token']
 
     def is_authorized(self):
         return self.__config['credentials']['access_token'] != ""
 
-    def update_tokens(self, access_token, refresh_token):
-        self.__config['credentials']['access_token'] = access_token
-        self.__config['credentials']['refresh_token'] = refresh_token
-        self.__config.write()
+    def update_tokens(self, my_access_token, my_refresh_token=None):
+        self.__config['credentials']['access_token'] = my_access_token
+        if my_refresh_token is not None:
+            self.__config['credentials']['refresh_token'] = my_refresh_token
+        with open(SECRETS_FILE, 'w') as secret_file:
+            self.__config.write(secret_file)
 
     def get_access_token(self):
         return self.__config['credentials']['access_token']
