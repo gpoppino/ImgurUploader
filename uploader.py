@@ -129,7 +129,7 @@ if __name__ == '__main__':
         imgurAuthorizer.update_tokens(access_token, refresh_token)
 
     parser = argparse.ArgumentParser(description='Uploads images to imgur.com')
-    parser.add_argument('images', nargs='+', help='images to upload')
+    parser.add_argument('image', nargs='+', help='Image to upload')
     parser.add_argument('-t', '--title', default="", required=False)
     parser.add_argument('-d', '--description', default="", required=False)
 
