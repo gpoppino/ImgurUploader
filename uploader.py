@@ -82,7 +82,7 @@ class ImgurUploader:
         }
         return headers
 
-    def upload_image(self, imgurAuthorizer, image_path):
+    def upload_image(self, imgur_authorizer, image_path):
         url = "https://api.imgur.com/3/image"
 
         with open(image_path, 'rb') as image_file:
@@ -97,10 +97,10 @@ class ImgurUploader:
             callback = self.__create_callback(encoder, image_path)
             monitor = MultipartEncoderMonitor(encoder, callback=callback)
 
-            headers = self.__build_headers(imgurAuthorizer.get_access_token(), monitor.content_type)
+            headers = self.__build_headers(imgur_authorizer.get_access_token(), monitor.content_type)
             response = requests.post(url, headers=headers, data=monitor, files=[])
             if response.status_code == 403:
-                new_access_token = imgurAuthorizer.getNewAccessToken()
+                new_access_token = imgur_authorizer.get_new_access_token()
                 if new_access_token is None:
                     return
                 headers = self.__build_headers(new_access_token, monitor.content_type)
