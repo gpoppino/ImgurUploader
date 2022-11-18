@@ -1,9 +1,9 @@
-import requests
-import webbrowser
-import configparser
+import argparse
 import base64
+import configparser
+import webbrowser
 import progressbar
-import sys
+import requests
 from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
 AUTHORIZATION_URL = "https://api.imgur.com/oauth2/authorize"
@@ -82,7 +82,7 @@ class ImgurUploader:
         }
         return headers
 
-    def upload_image(self, imgur_authorizer, image_path):
+    def upload_image(self, imgur_authorizer, image_path, title, description):
         url = "https://api.imgur.com/3/image"
 
         with open(image_path, 'rb') as image_file:
@@ -91,6 +91,8 @@ class ImgurUploader:
             payload = {
                 'image': b64_image,
                 'type': 'base64',
+                'title': title,
+                'description': description
             }
 
             encoder = MultipartEncoder(fields=payload)
@@ -126,9 +128,14 @@ if __name__ == '__main__':
 
         imgurAuthorizer.update_tokens(access_token, refresh_token)
 
-    if len(sys.argv) > 1:
-        imgurUploader = ImgurUploader()
-        for image in sys.argv[1:]:
-            data = imgurUploader.upload_image(imgurAuthorizer, image)
-            if data is not None:
-                print("Done %s => %s" % (image, data['link']))
+    parser = argparse.ArgumentParser(description='Uploads images to imgur.com')
+    parser.add_argument('images', nargs='+', help='images to upload')
+    parser.add_argument('-t', '--title', default="", required=False)
+    parser.add_argument('-d', '--description', default="", required=False)
+
+    args = parser.parse_args()
+    imgurUploader = ImgurUploader()
+    for image in args.images:
+        data = imgurUploader.upload_image(imgurAuthorizer, image, args.title, args.description)
+        if data is not None:
+            print("Done %s => %s" % (image, data['link']))
