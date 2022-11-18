@@ -135,7 +135,11 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     imgurUploader = ImgurUploader()
-    for image in args.images:
-        data = imgurUploader.upload_image(imgurAuthorizer, image, args.title, args.description)
+    counter = 1
+    for image in args.image:
+        image_number = "" if len(args.image) == 1 else " #%d" % counter
+        data = imgurUploader.upload_image(imgurAuthorizer, image, args.title + image_number,
+                                          args.description + image_number)
         if data is not None:
             print("Done %s => %s" % (image, data['link']))
+        counter += 1
