@@ -159,7 +159,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Uploads images to imgur.com')
     parser.add_argument('image', nargs='+', help='Image to upload')
-    parser.add_argument('-a', '--album', action="store_true", required=False)
+    parser.add_argument('-a', '--album', action="store_true", required=False, help="Create an album for the images")
     parser.add_argument('-t', '--title', default="", required=False)
     parser.add_argument('-d', '--description', default="", required=False)
 
