@@ -12,6 +12,13 @@ RESPONSE_TYPE = "token"
 SECRETS_FILE = ".client_secrets"
 
 
+def build_headers(my_access_token, content_type):
+    headers = {
+        'Authorization': 'Bearer %s' % my_access_token,
+        'Content-Type': content_type
+    }
+    return headers
+
 class ImgurAuthorizer:
 
     def __init__(self):
@@ -74,15 +81,7 @@ class ImgurUploader:
     def __finish_upload(self):
         self.__bar.finish()
 
-    @staticmethod
-    def __build_headers(my_access_token, content_type):
-        headers = {
-            'Authorization': 'Bearer %s' % my_access_token,
-            'Content-Type': content_type
-        }
-        return headers
-
-    def upload_image(self, imgur_authorizer, image_path, title, description):
+    def upload_image(self, imgur_authorizer, image_path, title, description, album_id=None):
         url = "https://api.imgur.com/3/image"
 
         with open(image_path, 'rb') as image_file:
@@ -95,17 +94,20 @@ class ImgurUploader:
                 'description': description
             }
 
+            if album_id is not None:
+                payload['album'] = album_id
+
             encoder = MultipartEncoder(fields=payload)
             callback = self.__create_callback(encoder, image_path)
             monitor = MultipartEncoderMonitor(encoder, callback=callback)
 
-            headers = self.__build_headers(imgur_authorizer.get_access_token(), monitor.content_type)
+            headers = build_headers(imgur_authorizer.get_access_token(), monitor.content_type)
             response = requests.post(url, headers=headers, data=monitor, files=[])
             if response.status_code == 403:
                 new_access_token = imgur_authorizer.get_new_access_token()
                 if new_access_token is None:
                     return
-                headers = self.__build_headers(new_access_token, monitor.content_type)
+                headers = build_headers(new_access_token, monitor.content_type)
                 response = requests.post(url, headers=headers, data=monitor, files=[])
 
             self.__finish_upload()
@@ -115,6 +117,33 @@ class ImgurUploader:
                 return None
 
             return response.json()['data']
+
+
+class ImgurAlbumCreator:
+
+    @staticmethod
+    def create_album(imgur_authorizer, title, description):
+        url = "https://api.imgur.com/3/album"
+
+        payload = {
+            'title': title,
+            'description': description
+        }
+
+        headers = build_headers(imgur_authorizer.get_access_token(), "application/json")
+        response = requests.post(url, headers=headers, json=payload)
+        if response.status_code == 403:
+            new_access_token = imgur_authorizer.get_new_access_token()
+            if new_access_token is None:
+                return
+            headers = build_headers(new_access_token, "application/json")
+            response = requests.post(url, headers=headers, json=payload)
+
+        if response.status_code != 200:
+            print("Error: " + response.json()['data']['error'])
+            return None
+
+        return response.json()['data']['id']
 
 
 if __name__ == '__main__':
@@ -130,16 +159,23 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Uploads images to imgur.com')
     parser.add_argument('image', nargs='+', help='Image to upload')
+    parser.add_argument('-a', '--album', action="store_true", required=False)
     parser.add_argument('-t', '--title', default="", required=False)
     parser.add_argument('-d', '--description', default="", required=False)
 
     args = parser.parse_args()
+    album = None
+    if args.album:
+        album = ImgurAlbumCreator().create_album(imgurAuthorizer, args.title, args.description)
     imgurUploader = ImgurUploader()
     counter = 1
     for image in args.image:
         image_number = "" if len(args.image) == 1 else " #%d" % counter
         data = imgurUploader.upload_image(imgurAuthorizer, image, args.title + image_number,
-                                          args.description + image_number)
+                                          args.description + image_number, album)
         if data is not None:
             print("Done %s => %s" % (image, data['link']))
-        counter += 1
+            counter += 1
+
+    if counter > 1 or album is not None:
+        print(f"Done uploading %d images to album https://imgur.com/a/{album}" % (counter - 1))
